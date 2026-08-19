@@ -14,7 +14,7 @@ DependencyGuard exports Swift Package Manager dependencies as JSON and compares 
 [Github Releases](https://github.com/yusufozgul/DependencyGuard/releases/latest)
 ```bash
 sudo mv DependencyGuard usr/local/bin/DependencyGuard
-``
+```
 
 ### 1. Generate a dependency graph
 
