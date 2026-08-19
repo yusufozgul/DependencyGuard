@@ -10,18 +10,24 @@ DependencyGuard exports Swift Package Manager dependencies as JSON and compares 
 
 ## Usage
 
+### 0. Install DependencyGuard
+[Github Releases](https://github.com/yusufozgul/DependencyGuard/releases/latest)
+```bash
+sudo mv DependencyGuard usr/local/bin/DependencyGuard
+``
+
 ### 1. Generate a dependency graph
 
 Pass the path of the Swift package for which you want to generate a dependency graph:
 
 ```bash
-swift run DependencyGuard generate /path/to/swift-package
+DependencyGuard generate /path/to/swift-package
 ```
 
 If no root path is provided, the current directory is used:
 
 ```bash
-swift run DependencyGuard generate
+DependencyGuard generate
 ```
 
 The command creates a `DependencyGraph.json` file in the current directory.
@@ -31,7 +37,7 @@ an Xcode target, pass the Xcode project and target name. The positional path is
 still the Swift package root used to generate the complete graph:
 
 ```bash
-swift run DependencyGuard generate /path/to/swift-package \
+DependencyGuard generate /path/to/swift-package \
   --xcode-project /path/to/MyApp.xcodeproj \
   --target MyApp
 ```
@@ -47,7 +53,7 @@ resolved dependency graph.
 Use `--verbose` to print the complete dependency list:
 
 ```bash
-swift run DependencyGuard generate /path/to/swift-package --verbose
+DependencyGuard generate /path/to/swift-package --verbose
 ```
 
 When filtering with `--xcode-project` and `--target`, `--verbose` also prints
@@ -59,7 +65,7 @@ matching hosts are replaced with `REDACTED` while the rest of the URL is
 preserved:
 
 ```bash
-swift run DependencyGuard generate /path/to/swift-package \
+DependencyGuard generate /path/to/swift-package \
   --redacted-domains gitlab.example.com,s3.example.com
 ```
 
@@ -69,7 +75,7 @@ paths and external (non-listed) domains are left unchanged.
 After building the release version, run the executable directly:
 
 ```bash
-swift run DependencyGuard generate /path/to/swift-package
+DependencyGuard generate /path/to/swift-package
 ```
 
 ### 2. Compare two graphs
@@ -77,7 +83,7 @@ swift run DependencyGuard generate /path/to/swift-package
 Pass the source and target dependency graph files with the `-s` and `-t` options:
 
 ```bash
-swift run DependencyGuard validate \
+DependencyGuard validate \
   --source-dependency-graph /path/to/source/DependencyGraph.json \
   --target-dependency-graph /path/to/target/DependencyGraph.json
 ```
@@ -85,7 +91,7 @@ swift run DependencyGuard validate \
 Short options can also be used:
 
 ```bash
-swift run DependencyGuard validate \
+DependencyGuard validate \
   -s /path/to/source/DependencyGraph.json \
   -t /path/to/target/DependencyGraph.json
 ```
@@ -118,14 +124,14 @@ swift test
 To list all available commands:
 
 ```bash
-swift run DependencyGuard --help
+DependencyGuard --help
 ```
 
 To list the options for a specific command:
 
 ```bash
-swift run DependencyGuard generate --help
-swift run DependencyGuard validate --help
+ependencyGuard generate --help
+DependencyGuard validate --help
 ```
 
 ### Options
