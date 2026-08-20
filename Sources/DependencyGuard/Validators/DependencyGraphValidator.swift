@@ -1,6 +1,8 @@
 import Foundation
 
 struct DependencyGraphValidator {
+    private let skippableVersionValues: Set<String> = ["unspecified"]
+
     func validate(source: [DependencyGraph], target: [DependencyGraph]) -> [DependencyValidationIssue] {
         let sourceDependencies = source.flattenedByIdentity
         let targetDependencies = target.flattenedByIdentity
@@ -57,6 +59,13 @@ struct DependencyGraphValidator {
     }
     
     private func validateVersions(identity: String, sourceVersion: String, targetVersion: String) -> [DependencyValidationIssue] {
+        if skippableVersionValues.contains(sourceVersion) || skippableVersionValues.contains(targetVersion) {
+            return [
+                .warning(identity: identity,
+                         message: "Version unspecified (source: \(sourceVersion), target: \(targetVersion))")
+            ]
+        }
+
         guard let source = SemanticVersion(sourceVersion),
               let target = SemanticVersion(targetVersion)
         else {
