@@ -97,21 +97,37 @@ struct DependencyValidationIssue: Sendable, Equatable, CustomStringConvertible {
     let severity: DependencyValidationSeverity
     let identity: String
     let message: String
-    
+
     var description: String {
-        "\(severity.rawValue) \(identity): \(message)"
+        if DependencyValidationIssue.supportsColor {
+            "\(severity.colorCode)\(severity.rawValue)\(Self.resetCode) \(identity): \(message)"
+        } else {
+            "\(severity.rawValue) \(identity): \(message)"
+        }
     }
-    
+
     static func warning(identity: String, message: String) -> Self {
         Self(severity: .warning, identity: identity, message: message)
     }
-    
+
     static func error(identity: String, message: String) -> Self {
         Self(severity: .error, identity: identity, message: message)
     }
-    
+
     enum DependencyValidationSeverity: String, Sendable, Equatable {
         case warning = "WARNING"
         case error = "ERROR"
+
+        var colorCode: String {
+            switch self {
+            case .warning: return "\u{1B}[33m"
+            case .error: return "\u{1B}[31m"
+            }
+        }
     }
+
+    private static let resetCode = "\u{1B}[0m"
+    private static let supportsColor: Bool = {
+        isatty(fileno(stdout)) != 0 && ProcessInfo.processInfo.environment["TERM"] != "dumb"
+    }()
 }
