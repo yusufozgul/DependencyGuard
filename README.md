@@ -13,7 +13,7 @@ DependencyGuard exports Swift Package Manager dependencies as JSON and compares 
 ### 0. Install DependencyGuard
 [Github Releases](https://github.com/yusufozgul/DependencyGuard/releases/latest)
 ```bash
-sudo mv DependencyGuard usr/local/bin/DependencyGuard
+sudo mv DependencyGuard /usr/local/bin/DependencyGuard
 ```
 
 ### 1. Generate a dependency graph
@@ -31,6 +31,19 @@ DependencyGuard generate
 ```
 
 The command creates a `DependencyGraph.json` file in the current directory.
+
+Before generating the graph, ensure dependencies are resolved:
+
+```bash
+swift package resolve
+```
+
+If the project uses Tuist, resolve and install dependencies first:
+
+```bash
+tuist install
+tuist generate
+```
 
 To generate the complete dependency graph and keep only the dependencies used by
 an Xcode target, pass the Xcode project and target name. The positional path is
@@ -107,6 +120,7 @@ The validation output uses the following severity levels:
 - `WARNING` indicates a difference that does not fail validation:
   - Source version is newer than target version (same major)
   - Dependency URL differs between source and target
+  - Version is unspecified (source or target)
 - `ERROR` indicates a validation failure and causes the command to exit with a non-zero status code:
   - Target version is not compatible with source version (different major)
   - Binary checksum differs
