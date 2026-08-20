@@ -26,6 +26,10 @@ struct GenerateDependencyGraph: AsyncParsableCommand {
             break
         }
 
+        if let redactedDomains {
+            DependencyGraphDependencyType.domains = Set(redactedDomains.components(separatedBy: ","))
+        }
+
         let xcFrameworks = try await WorkspaceStateProcessor().xcFrameworks(from: spmRoot)
         let dependencyList = try await DependencyListProcessor().dependencyTree(from: spmRoot)
 
@@ -43,10 +47,6 @@ struct GenerateDependencyGraph: AsyncParsableCommand {
                 packageProducts: packageProducts
             )
             dependencyGraph = dependencyGraph.filtered(using: selection)
-        }
-
-        if let redactedDomains {
-            DependencyGraphDependencyType.domains = Set(redactedDomains.components(separatedBy: ","))
         }
 
         let encoder = JSONEncoder()
