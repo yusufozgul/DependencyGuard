@@ -67,8 +67,8 @@ enum DependencyGraphDependencyType: Codable, Sendable, Equatable, Hashable {
             .remotePackage(url: redact(originUrl: url), version: version)
         case let .remoteBinary(url, checksum):
             .remoteBinary(url: redact(originUrl: url), checksum: checksum)
-        case .localBinary:
-            self
+        case let .localBinary(path):
+            .localBinary(path: redactLocalPath(path))
         }
     }
 }
@@ -96,5 +96,9 @@ extension DependencyGraphDependencyType {
         url.host = "REDACTED"
         
         return url.string ?? originUrl
+    }
+
+    func redactLocalPath(_ path: String) -> String {
+        path.replacingOccurrences(of: FileManager.default.currentDirectoryPath + "/", with: "")
     }
 }
