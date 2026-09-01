@@ -123,7 +123,7 @@ final class DependencyGraphValidatorTests: XCTestCase {
         XCTAssertEqual(issues.map(\.severity), [.error])
     }
 
-    func testDifferentBinaryURLsProduceWarning() {
+    func testDifferentBinaryURLsWithSameChecksumProduceNoIssues() {
         let issues = validate(
             source: binary(
                 identity: "Analytics",
@@ -137,7 +137,24 @@ final class DependencyGraphValidatorTests: XCTestCase {
             )
         )
 
-        XCTAssertEqual(issues.map(\.severity), [.warning])
+        XCTAssertTrue(issues.isEmpty)
+    }
+
+    func testDifferentBinaryURLsWithDifferentChecksumProducesErrorOnly() {
+        let issues = validate(
+            source: binary(
+                identity: "Analytics",
+                url: "https://example.com/source/Analytics.zip",
+                checksum: "source-checksum"
+            ),
+            target: binary(
+                identity: "Analytics",
+                url: "https://example.com/target/Analytics.zip",
+                checksum: "target-checksum"
+            )
+        )
+
+        XCTAssertEqual(issues.map(\.severity), [.warning, .error])
     }
 
     func testMatchingLocalBinariesProduceNoIssues() {
@@ -151,11 +168,20 @@ final class DependencyGraphValidatorTests: XCTestCase {
 
     func testInvalidVersionProducesError() {
         let issues = validate(
-            source: package(identity: "Alamofire", version: "unspecified"),
+            source: package(identity: "Alamofire", version: "not-a-version"),
             target: package(identity: "Alamofire", version: "5.10.2")
         )
 
         XCTAssertEqual(issues.map(\.severity), [.error])
+    }
+
+    func testUnspecifiedVersionProducesWarning() {
+        let issues = validate(
+            source: package(identity: "Alamofire", version: "unspecified"),
+            target: package(identity: "Alamofire", version: "5.10.2")
+        )
+
+        XCTAssertEqual(issues.map(\.severity), [.warning])
     }
 
     private func validate(source: DependencyGraph, target: DependencyGraph) -> [DependencyValidationIssue] {
