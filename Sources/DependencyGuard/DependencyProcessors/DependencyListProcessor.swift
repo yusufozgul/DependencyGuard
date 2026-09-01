@@ -19,11 +19,27 @@ struct DependencyListProcessor {
                                    input: .none,
                                    output: .sequence,
                                    error: .sequence) { execution in
-            for try await line in execution.standardError.strings() {
-                standartError += line + "\n"
-            }
-            for try await line in execution.standardOutput.strings() {
-                standartOutput += line + "\n"
+            try await withThrowingTaskGroup(of: StreamOutput.self) { group in
+                group.addTask {
+                    var output = ""
+                    for try await line in execution.standardError.strings() {
+                        output += line + "\n"
+                    }
+                    return StreamOutput.stderr(output)
+                }
+                group.addTask {
+                    var output = ""
+                    for try await line in execution.standardOutput.strings() {
+                        output += line + "\n"
+                    }
+                    return StreamOutput.stdout(output)
+                }
+                for try await collected in group {
+                    switch collected {
+                    case .stdout(let output): standartOutput = output
+                    case .stderr(let output): standartError = output
+                    }
+                }
             }
         }
         
@@ -35,6 +51,11 @@ struct DependencyListProcessor {
         let dependencyList = try JSONDecoder().decode(SPMDependencyList.self, from: outputData)
         return dependencyList.dependencies
     }
+}
+
+private enum StreamOutput: Sendable {
+    case stdout(String)
+    case stderr(String)
 }
 
 enum DependencyListProcessorError: LocalizedError, CustomDebugStringConvertible {
