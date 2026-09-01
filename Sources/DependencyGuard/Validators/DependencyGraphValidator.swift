@@ -3,7 +3,12 @@ import Foundation
 struct DependencyGraphValidator {
     private let skippableVersionValues: Set<String> = ["unspecified"]
 
-    func validate(source: [DependencyGraph], target: [DependencyGraph]) -> [DependencyValidationIssue] {
+    func validate(
+        source: [DependencyGraph],
+        target: [DependencyGraph],
+        sourceLabel: String = "source",
+        targetLabel: String = "target"
+    ) -> [DependencyValidationIssue] {
         let sourceDependencies = source.flattenedByIdentity
         let targetDependencies = target.flattenedByIdentity
         
@@ -14,29 +19,40 @@ struct DependencyGraphValidator {
                       let target = targetDependencies[identity]
                 else { return [] }
                 
-                return validate(source: source, target: target)
+                return validate(source: source, target: target, sourceLabel: sourceLabel, targetLabel: targetLabel)
             }
     }
     
-    private func validate(source: DependencyGraph, target: DependencyGraph) -> [DependencyValidationIssue] {
+    private func validate(
+        source: DependencyGraph,
+        target: DependencyGraph,
+        sourceLabel: String,
+        targetLabel: String
+    ) -> [DependencyValidationIssue] {
         switch (source.type, target.type) {
         case let (.remotePackage(sourceURL, sourceVersion), .remotePackage(targetURL, targetVersion)):
             return validateURLs(identity: source.identity,
                                 sourceURL: sourceURL,
-                                targetURL: targetURL)
+                                targetURL: targetURL,
+                                sourceLabel: sourceLabel,
+                                targetLabel: targetLabel)
                 + validateVersions(identity: source.identity,
                                    sourceVersion: sourceVersion,
-                                   targetVersion: targetVersion)
+                                   targetVersion: targetVersion,
+                                   sourceLabel: sourceLabel,
+                                   targetLabel: targetLabel)
             
         case let (.remoteBinary(sourceURL, sourceChecksum), .remoteBinary(targetURL, targetChecksum)):
-            let checksumIssues: [DependencyValidationIssue] = sourceChecksum == targetChecksum
-                ? []
-                : [.error(identity: source.identity,
-                          message: "Binary checksum differs (source: \(sourceChecksum), target: \(targetChecksum))")]
+            if sourceChecksum == targetChecksum { return [] }
 
             return validateURLs(identity: source.identity,
                                 sourceURL: sourceURL,
-                                targetURL: targetURL) + checksumIssues
+                                targetURL: targetURL,
+                                sourceLabel: sourceLabel,
+                                targetLabel: targetLabel) + [
+                .error(identity: source.identity,
+                       message: "Binary checksum differs (\(sourceLabel): \(sourceChecksum), \(targetLabel): \(targetChecksum))")
+            ]
             
         case (.localBinary, .localBinary):
             return []
@@ -44,25 +60,37 @@ struct DependencyGraphValidator {
         default:
             return [
                 .error(identity: source.identity,
-                       message: "Dependency type differs between source and target")
+                       message: "Dependency type differs between \(sourceLabel) and \(targetLabel)")
             ]
         }
     }
 
-    private func validateURLs(identity: String, sourceURL: String, targetURL: String) -> [DependencyValidationIssue] {
+    private func validateURLs(
+        identity: String,
+        sourceURL: String,
+        targetURL: String,
+        sourceLabel: String,
+        targetLabel: String
+    ) -> [DependencyValidationIssue] {
         guard sourceURL != targetURL else { return [] }
 
         return [
             .warning(identity: identity,
-                     message: "Dependency URL differs (source: \(sourceURL), target: \(targetURL))")
+                     message: "Dependency URL differs (\(sourceLabel): \(sourceURL), \(targetLabel): \(targetURL))")
         ]
     }
     
-    private func validateVersions(identity: String, sourceVersion: String, targetVersion: String) -> [DependencyValidationIssue] {
+    private func validateVersions(
+        identity: String,
+        sourceVersion: String,
+        targetVersion: String,
+        sourceLabel: String,
+        targetLabel: String
+    ) -> [DependencyValidationIssue] {
         if skippableVersionValues.contains(sourceVersion) || skippableVersionValues.contains(targetVersion) {
             return [
                 .warning(identity: identity,
-                         message: "Version unspecified (source: \(sourceVersion), target: \(targetVersion))")
+                         message: "Version unspecified (\(sourceLabel): \(sourceVersion), \(targetLabel): \(targetVersion))")
             ]
         }
 
@@ -71,7 +99,7 @@ struct DependencyGraphValidator {
         else {
             return [
                 .error(identity: identity,
-                       message: "Invalid semantic version (source: \(sourceVersion), target: \(targetVersion))")
+                       message: "Invalid semantic version (\(sourceLabel): \(sourceVersion), \(targetLabel): \(targetVersion))")
             ]
         }
         
@@ -82,13 +110,13 @@ struct DependencyGraphValidator {
         if source > target && source.major == target.major {
             return [
                 .warning(identity: identity,
-                         message: "Source version \(sourceVersion) is newer than target version \(targetVersion)")
+                         message: "\(sourceLabel) version \(sourceVersion) is newer than \(targetLabel) version \(targetVersion)")
             ]
         }
         
         return [
             .error(identity: identity,
-                   message: "Target version \(targetVersion) is not compatible with source version \(sourceVersion)")
+                   message: "\(targetLabel) version \(targetVersion) is not compatible with \(sourceLabel) version \(sourceVersion)")
         ]
     }
 }
