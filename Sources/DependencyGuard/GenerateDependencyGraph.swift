@@ -30,7 +30,9 @@ struct GenerateDependencyGraph: AsyncParsableCommand {
             DependencyGraphDependencyType.domains = Set(redactedDomains.components(separatedBy: ","))
         }
 
+        print("Generating Workspace State...")
         let xcFrameworks = try await WorkspaceStateProcessor().xcFrameworks(from: spmRoot)
+        print("Generating swift package show-dependencies...")
         let dependencyList = try await DependencyListProcessor().dependencyTree(from: spmRoot)
 
         let completeDependencyGraph = DependencyGraphGenerator().generate(
