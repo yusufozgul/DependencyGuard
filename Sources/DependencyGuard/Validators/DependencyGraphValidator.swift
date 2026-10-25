@@ -12,7 +12,7 @@ struct DependencyGraphValidator {
         let sourceDependencies = source.flattenedByIdentity
         let targetDependencies = target.flattenedByIdentity
         
-        return sourceDependencies.keys
+        var issues = sourceDependencies.keys
             .sorted()
             .flatMap { identity -> [DependencyValidationIssue] in
                 guard let source = sourceDependencies[identity],
@@ -21,6 +21,15 @@ struct DependencyGraphValidator {
                 
                 return validate(source: source, target: target, sourceLabel: sourceLabel, targetLabel: targetLabel)
             }
+        
+        issues += detectSourceAndBinaryConflicts(
+            source: sourceDependencies,
+            target: targetDependencies,
+            sourceLabel: sourceLabel,
+            targetLabel: targetLabel
+        )
+        
+        return issues
     }
     
     private func validate(
@@ -92,6 +101,37 @@ struct DependencyGraphValidator {
         }
 
         return normalized
+    }
+    
+    private func detectSourceAndBinaryConflicts(
+        source: [String: DependencyGraph],
+        target: [String: DependencyGraph],
+        sourceLabel: String,
+        targetLabel: String
+    ) -> [DependencyValidationIssue] {
+        let sourceByName = Dictionary(
+            source.values.map { ($0.name.lowercased(), $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let targetByName = Dictionary(
+            target.values.map { ($0.name.lowercased(), $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        
+        return sourceByName.keys.sorted().flatMap { name -> [DependencyValidationIssue] in
+            guard let sourceDep = sourceByName[name],
+                  let targetDep = targetByName[name]
+            else { return [] }
+            
+            if sourceDep.identity == targetDep.identity { return [] }
+            
+            guard sourceDep.type.isBinary != targetDep.type.isBinary else { return [] }
+            
+            return [
+                .error(identity: sourceDep.name,
+                       message: "Dependency linked as both source and binary (\(sourceLabel): \(sourceDep.type.label), \(targetLabel): \(targetDep.type.label))")
+            ]
+        }
     }
     
     private func validateVersions(
