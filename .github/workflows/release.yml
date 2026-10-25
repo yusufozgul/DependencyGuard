@@ -1,0 +1,25 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build-and-release:
+    name: Build and Release macOS Binary
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build release binary
+        run: swift build -c release
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: .build/release/DependencyGuard
+          generate_release_notes: true
