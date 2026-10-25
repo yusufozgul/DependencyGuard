@@ -211,6 +211,110 @@ final class DependencyGraphValidatorTests: XCTestCase {
         XCTAssertEqual(issues.map(\.severity), [.warning])
     }
 
+    func testSameDependencyAsSourceAndBinaryProducesError() {
+        let source = DependencyGraph(
+            identity: "dependencya",
+            name: "DependencyA",
+            type: .remotePackage(url: "https://github.com/example/DependencyA", version: "1.0.0"),
+            dependencies: []
+        )
+        let target = DependencyGraph(
+            identity: "DependencyA",
+            name: "DependencyA",
+            type: .remoteBinary(url: "https://example.com/DependencyA.zip", checksum: "checksum"),
+            dependencies: []
+        )
+
+        let issues = validate(source: [source], target: [target])
+
+        XCTAssertEqual(issues.map(\.severity), [.error])
+        XCTAssertEqual(issues.first?.identity, "DependencyA")
+        XCTAssertEqual(
+            issues.first?.message,
+            "Dependency linked as both source and binary (source: source, target: remote binary)"
+        )
+    }
+
+    func testSameDependencyAsSourceAndLocalBinaryProducesError() {
+        let source = DependencyGraph(
+            identity: "dependencya",
+            name: "DependencyA",
+            type: .remotePackage(url: "https://github.com/example/DependencyA", version: "1.0.0"),
+            dependencies: []
+        )
+        let target = DependencyGraph(
+            identity: "DependencyA",
+            name: "DependencyA",
+            type: .localBinary(path: "/path/DependencyA.xcframework"),
+            dependencies: []
+        )
+
+        let issues = validate(source: [source], target: [target])
+
+        XCTAssertEqual(issues.map(\.severity), [.error])
+        XCTAssertEqual(
+            issues.first?.message,
+            "Dependency linked as both source and binary (source: source, target: local binary)"
+        )
+    }
+
+    func testSameDependencyAsBinaryInBothGraphsDoesNotProduceConflict() {
+        let source = DependencyGraph(
+            identity: "DependencyA-source",
+            name: "DependencyA",
+            type: .remoteBinary(url: "https://example.com/source/DependencyA.zip", checksum: "checksum"),
+            dependencies: []
+        )
+        let target = DependencyGraph(
+            identity: "DependencyA-target",
+            name: "DependencyA",
+            type: .remoteBinary(url: "https://example.com/target/DependencyA.zip", checksum: "checksum"),
+            dependencies: []
+        )
+
+        let issues = validate(source: [source], target: [target])
+
+        XCTAssertTrue(issues.isEmpty)
+    }
+
+    func testSameDependencyAsSourceInBothGraphsDoesNotProduceConflict() {
+        let source = DependencyGraph(
+            identity: "dependencya-source",
+            name: "DependencyA",
+            type: .remotePackage(url: "https://github.com/example/DependencyA", version: "1.0.0"),
+            dependencies: []
+        )
+        let target = DependencyGraph(
+            identity: "dependencya-target",
+            name: "DependencyA",
+            type: .remotePackage(url: "https://github.com/example/DependencyA", version: "1.0.0"),
+            dependencies: []
+        )
+
+        let issues = validate(source: [source], target: [target])
+
+        XCTAssertTrue(issues.isEmpty)
+    }
+
+    func testSourceBinaryConflictDetectedCaseInsensitively() {
+        let source = DependencyGraph(
+            identity: "dependencya",
+            name: "DependencyA",
+            type: .remotePackage(url: "https://github.com/example/DependencyA", version: "1.0.0"),
+            dependencies: []
+        )
+        let target = DependencyGraph(
+            identity: "dependencya-binary",
+            name: "dependencya",
+            type: .remoteBinary(url: "https://example.com/DependencyA.zip", checksum: "checksum"),
+            dependencies: []
+        )
+
+        let issues = validate(source: [source], target: [target])
+
+        XCTAssertEqual(issues.map(\.severity), [.error])
+    }
+
     private func validate(source: DependencyGraph, target: DependencyGraph) -> [DependencyValidationIssue] {
         validate(source: [source], target: [target])
     }
