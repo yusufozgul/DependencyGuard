@@ -78,6 +78,33 @@ final class DependencyGraphValidatorTests: XCTestCase {
         )
     }
 
+    func testURLsDifferingOnlyByGitSuffixProduceNoIssues() {
+        let issues = validate(
+            source: package(identity: "nanopb", version: "1.0.0", url: "https://github.com/firebase/nanopb"),
+            target: package(identity: "nanopb", version: "1.0.0", url: "https://github.com/firebase/nanopb.git")
+        )
+
+        XCTAssertTrue(issues.isEmpty)
+    }
+
+    func testURLsDifferingOnlyByTrailingSlashProduceNoIssues() {
+        let issues = validate(
+            source: package(identity: "Alamofire", version: "5.10.2", url: "https://github.com/Alamofire/Alamofire"),
+            target: package(identity: "Alamofire", version: "5.10.2", url: "https://github.com/Alamofire/Alamofire/")
+        )
+
+        XCTAssertTrue(issues.isEmpty)
+    }
+
+    func testURLsDifferingByGitSuffixAndTrailingSlashProduceNoIssues() {
+        let issues = validate(
+            source: package(identity: "nanopb", version: "1.0.0", url: "https://github.com/firebase/nanopb.git"),
+            target: package(identity: "nanopb", version: "1.0.0", url: "https://github.com/firebase/nanopb/")
+        )
+
+        XCTAssertTrue(issues.isEmpty)
+    }
+
     func testRemoteAndLocalBinaryMismatchProducesError() {
         let issues = validate(
             source: binary(identity: "Analytics", checksum: "checksum"),

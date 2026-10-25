@@ -72,12 +72,26 @@ struct DependencyGraphValidator {
         sourceLabel: String,
         targetLabel: String
     ) -> [DependencyValidationIssue] {
-        guard sourceURL != targetURL else { return [] }
+        guard normalizeURL(sourceURL) != normalizeURL(targetURL) else { return [] }
 
         return [
             .warning(identity: identity,
                      message: "Dependency URL differs (\(sourceLabel): \(sourceURL), \(targetLabel): \(targetURL))")
         ]
+    }
+
+    private func normalizeURL(_ url: String) -> String {
+        var normalized = url
+
+        while normalized.hasSuffix("/") {
+            normalized.removeLast()
+        }
+
+        if normalized.hasSuffix(".git") {
+            normalized.removeLast(4)
+        }
+
+        return normalized
     }
     
     private func validateVersions(
