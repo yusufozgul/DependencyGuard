@@ -87,6 +87,23 @@ extension [DependencyGraph] {
 }
 
 extension DependencyGraphDependencyType {
+    var isBinary: Bool {
+        switch self {
+        case .remotePackage: return false
+        case .remoteBinary, .localBinary: return true
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .remotePackage: return "source"
+        case .remoteBinary: return "remote binary"
+        case .localBinary: return "local binary"
+        }
+    }
+}
+
+extension DependencyGraphDependencyType {
     nonisolated(unsafe) static var domains: Set<String> = []
     func redact(originUrl: String) -> String {
         guard var url = URLComponents(string: originUrl),

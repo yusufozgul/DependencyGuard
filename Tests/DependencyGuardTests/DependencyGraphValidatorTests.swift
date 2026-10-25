@@ -229,6 +229,113 @@ func testUnspecifiedVersionProducesWarning() {
     #expect(issues.map(\.severity) == [.warning])
 }
 
+@Test
+func testSameDependencyAsSourceAndBinaryProducesError() {
+    let source = DependencyGraph(
+        identity: "dependencya",
+        name: "DependencyA",
+        type: .remotePackage(url: "https://github.com/example/DependencyA", version: "1.0.0"),
+        dependencies: []
+    )
+    let target = DependencyGraph(
+        identity: "DependencyA",
+        name: "DependencyA",
+        type: .remoteBinary(url: "https://example.com/DependencyA.zip", checksum: "checksum"),
+        dependencies: []
+    )
+
+    let issues = validate(source: [source], target: [target])
+
+    #expect(issues.map(\.severity) == [.error])
+    #expect(issues.first?.identity == "DependencyA")
+    #expect(
+        issues.first?.message == "Dependency linked as both source and binary (source: source, target: remote binary)"
+    )
+}
+
+@Test
+func testSameDependencyAsSourceAndLocalBinaryProducesError() {
+    let source = DependencyGraph(
+        identity: "dependencya",
+        name: "DependencyA",
+        type: .remotePackage(url: "https://github.com/example/DependencyA", version: "1.0.0"),
+        dependencies: []
+    )
+    let target = DependencyGraph(
+        identity: "DependencyA",
+        name: "DependencyA",
+        type: .localBinary(path: "/path/DependencyA.xcframework"),
+        dependencies: []
+    )
+
+    let issues = validate(source: [source], target: [target])
+
+    #expect(issues.map(\.severity) == [.error])
+    #expect(
+        issues.first?.message == "Dependency linked as both source and binary (source: source, target: local binary)"
+    )
+}
+
+@Test
+func testSameDependencyAsBinaryInBothGraphsDoesNotProduceConflict() {
+    let source = DependencyGraph(
+        identity: "DependencyA-source",
+        name: "DependencyA",
+        type: .remoteBinary(url: "https://example.com/source/DependencyA.zip", checksum: "checksum"),
+        dependencies: []
+    )
+    let target = DependencyGraph(
+        identity: "DependencyA-target",
+        name: "DependencyA",
+        type: .remoteBinary(url: "https://example.com/target/DependencyA.zip", checksum: "checksum"),
+        dependencies: []
+    )
+
+    let issues = validate(source: [source], target: [target])
+
+    #expect(issues.isEmpty)
+}
+
+@Test
+func testSameDependencyAsSourceInBothGraphsDoesNotProduceConflict() {
+    let source = DependencyGraph(
+        identity: "dependencya-source",
+        name: "DependencyA",
+        type: .remotePackage(url: "https://github.com/example/DependencyA", version: "1.0.0"),
+        dependencies: []
+    )
+    let target = DependencyGraph(
+        identity: "dependencya-target",
+        name: "DependencyA",
+        type: .remotePackage(url: "https://github.com/example/DependencyA", version: "1.0.0"),
+        dependencies: []
+    )
+
+    let issues = validate(source: [source], target: [target])
+
+    #expect(issues.isEmpty)
+}
+
+@Test
+func testSourceBinaryConflictDetectedCaseInsensitively() {
+    let source = DependencyGraph(
+        identity: "dependencya",
+        name: "DependencyA",
+        type: .remotePackage(url: "https://github.com/example/DependencyA", version: "1.0.0"),
+        dependencies: []
+    )
+    let target = DependencyGraph(
+        identity: "dependencya-binary",
+        name: "dependencya",
+        type: .remoteBinary(url: "https://example.com/DependencyA.zip", checksum: "checksum"),
+        dependencies: []
+    )
+
+    let issues = validate(source: [source], target: [target])
+
+    #expect(issues.map(\.severity) == [.error])
+}
+
 // MARK: - Helpers
 
 private func validate(source: DependencyGraph, target: DependencyGraph) -> [DependencyValidationIssue] {
